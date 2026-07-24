@@ -1,6 +1,6 @@
-# cheeky-cart-catalog (HW5 checkpoint)
+# cheeky-cart-catalog (L06 / HW5 checkpoint)
 
-**Branch:** `hw5` — REST + gRPC only (no later homework additions).  
+**Branch:** `L06-HW5` — REST + gRPC only (no L09 additions).  
 **Module:** `github.com/Fusneica-FlorentinCristian/cheeky-cart-catalog`
 
 Cheeky Cart **Catalog** service — **FR-01** browse/list, **FR-02** product detail.
@@ -37,4 +37,4 @@ gen/catalog/v1/
 internal/catalog/store.go
 ```
 
-Later work (telemetry, k6) lives on `main`, not this branch.
+L09/HW7 work (telemetry, k6) lives on branch `L09-HW7`; `main` continues after that.
