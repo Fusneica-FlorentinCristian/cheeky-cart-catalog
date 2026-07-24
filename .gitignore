@@ -5,3 +5,10 @@
 
 # Go
 /vendor/
+
+# SigNoz upstream clone (use docker/signoz-foundry + Foundry instead)
+/docker/signoz/
+/docker/signoz-foundry/pours/
+/pours/
+/docker/signoz-foundry/casting.yaml.lock
+/catalog-rest-linux

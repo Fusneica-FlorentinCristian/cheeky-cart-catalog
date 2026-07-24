@@ -1,0 +1,12 @@
+# Copy to pours/deployment/ after `foundryctl forge`
+services:
+  signoz-signoz-0:
+    dns:
+      - 127.0.0.11
+    environment:
+      # Without an org row, OpAMP rejects the ingester → OTLP ports stay on nop pipelines.
+      # See: https://signoz.io/docs/manage/administrator-guide/configuration/root-user/
+      SIGNOZ_USER_ROOT_ENABLED: "true"
+      SIGNOZ_USER_ROOT_EMAIL: admin@cheeky-cart.local
+      SIGNOZ_USER_ROOT_PASSWORD: CheekyCart-HW7-Local
+      SIGNOZ_USER_ROOT_ORG_NAME: default

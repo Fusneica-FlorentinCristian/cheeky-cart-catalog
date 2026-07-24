@@ -1,5 +1,6 @@
-# cheeky-cart-catalog
+# cheeky-cart-catalog (L09 / HW7 checkpoint)
 
+**Branch:** `L09-HW7` — L06/HW5 Catalog (REST + gRPC) plus L09/HW7 telemetry and k6.  
 **Module:** `github.com/Fusneica-FlorentinCristian/cheeky-cart-catalog`
 
 Cheeky Cart **Catalog** microservice (L03 bounded context). Implements **FR-01** (browse/list) and **FR-02** (product detail).
@@ -120,34 +121,35 @@ Add a one-line note at the top of this README with your real module path before 
 | L03 | **Catalog** bounded context — service split |
 | L04 | REST chosen for browser; gRPC optional for internal calls |
 | L07 | Document `GET /v1/products` in ARD **Data Flows/APIs** — same contract as REST here |
-| L09 | **HW7** — structured logs + `/metrics`; **k6** load test (`scripts/catalog-load.js`) |
+| L09 | **HW7** — this branch: structured logs + `/metrics`; **k6** load test (`scripts/catalog-load.js`) |
+
+**Snapshot branches:** [`L06-HW5`](https://github.com/Fusneica-FlorentinCristian/cheeky-cart-catalog/tree/L06-HW5) (REST + gRPC only) · **`L09-HW7`** (this tree) · `main` for later work.
 
 ---
 
-## L09 instrumentation + k6 (HW7)
+## L09 instrumentation + k6 + SigNoz (HW7)
 
 REST server (`cmd/rest`) includes:
 
 - **JSON logs** (`log/slog`) — `request_id`, `method`, `path`, `status`, `duration_ms`
 - **Prometheus metrics** at `GET /metrics` — `http_requests_total`, `http_request_duration_seconds`
+- **OpenTelemetry traces** (optional) — export to SigNoz when `OTEL_EXPORTER_OTLP_ENDPOINT` is set
 - **Correlation ID** — pass `X-Request-ID` header or receive one in the response
+
+Full performance report: [docs/performance-testing.md](docs/performance-testing.md)  
+SigNoz setup: [docker/signoz-foundry/README.md](docker/signoz-foundry/README.md)
 
 ### Verify instrumentation
 
 ```powershell
 go run ./cmd/rest
-```
-
-```powershell
 curl http://localhost:8080/health
 curl http://localhost:8080/metrics
 ```
 
-JSON log lines appear on stdout for each request.
-
 ### k6 load test (required for HW7)
 
-Install [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/) once (`choco install k6` on Windows).
+Install [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/) once (`winget install GrafanaLabs.k6` on Windows).
 
 With REST running in another terminal:
 
@@ -155,21 +157,33 @@ With REST running in another terminal:
 k6 run scripts/catalog-load.js
 ```
 
-Optional base URL override:
+### SigNoz locally (required for HW7)
+
+1. Install [Foundry](https://signoz.io/docs/install/docker/) (`foundryctl`)
+2. Sign in to Docker Desktop (org policy may require Autodesk account)
+3. Start stack:
 
 ```powershell
-$env:BASE_URL="http://localhost:8080"
-k6 run scripts/catalog-load.js
+.\scripts\start-signoz.ps1
 ```
 
-Copy k6 summary output into your [performance test report](../L09/performance-test-report.md) (course repo) or `docs/performance-test-report.md` in your GitHub repo.
+4. Run REST with trace export (catalog on **8081** while SigNoz UI uses **8080**):
+
+```powershell
+$env:PORT = "8081"
+$env:OTEL_EXPORTER_OTLP_ENDPOINT = "localhost:4318"
+go run ./cmd/rest
+curl http://localhost:8081/products
+```
+
+5. Open http://localhost:8080 → **Services** → `cheeky-cart-catalog-rest` → **Traces**
 
 ### LMS submit (HW7)
 
-1. Push instrumented repo to GitHub (same repo as HW5 or a new branch)
+1. Push branch **`L09-HW7`** to GitHub
 2. Grant collaborator **`popescuag`**
-3. LMS comment: repo URL + note that HW7 adds telemetry + k6 results in report
-4. **No ARD PDF** — code + performance report
+3. LMS comment: repo URL + note HW7 adds telemetry, k6 report, and SigNoz docs
+4. Attach **L09-performance-test-report.docx** (from course builder) or link `docs/performance-testing.md`
 
 ---
 
@@ -186,8 +200,11 @@ Copy k6 summary output into your [performance test report](../L09/performance-te
 api/catalog/v1/catalog.proto   # ListProducts, GetProduct RPCs
 gen/catalog/v1/                # generated Go (committed)
 internal/catalog/store.go      # in-memory products (v1)
-internal/telemetry/            # L09 — request logs + Prometheus metrics
+internal/telemetry/            # L09 — logs, metrics, OTel traces
 scripts/catalog-load.js        # L09 HW7 — k6 load test
+scripts/start-signoz.ps1       # L09 HW7 — start local SigNoz (Foundry)
+docker/signoz-foundry/         # L09 HW7 — Foundry casting.yaml + README
+docs/performance-testing.md    # L09 HW7 — filled performance report
 cmd/rest/main.go               # HTTP JSON — HW5 task 01, HW7 telemetry
 cmd/grpc/main.go               # gRPC server — HW5 task 02
 ```
