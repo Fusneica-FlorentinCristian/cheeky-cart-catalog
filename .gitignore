@@ -1,0 +1,7 @@
+# Binaries
+*.exe
+/catalog-rest
+/catalog-grpc
+
+# Go
+/vendor/
