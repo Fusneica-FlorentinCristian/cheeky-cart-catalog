@@ -2,7 +2,7 @@
 
 Captured **2026-07-30** after fixing the ingester **nop-pipeline** issue (root user org bootstrap in `compose.override.yaml`).
 
-Screenshots taken at **1920×1080** (maximized browser viewport).
+Screenshots taken at **1920×1080** after a **k6 load run with OTLP export enabled** (~79k spans). UI charts stay empty if you only send a handful of manual requests.
 
 ## Environment
 
@@ -29,7 +29,7 @@ Drill into the service to see latency/rate charts and per-endpoint span counts (
 
 Close-up of the **Key Operations** table (span names = HTTP method + path from `otelhttp` middleware):
 
-![SigNoz key operations — GET /products, GET /health](images/signoz-service-operations.png)
+![SigNoz key operations — GET /products, GET /health, GET /products/1](images/signoz-service-operations.png)
 
 ## ClickHouse — backend proof
 
@@ -42,7 +42,7 @@ Same data visible in ClickHouse (`signoz_traces.signoz_index_v3`):
 
 ```sql
 SELECT count() AS total_traces FROM signoz_traces.signoz_index_v3
--- 16
+-- 79681
 
 SELECT serviceName, name, count() AS spans
 FROM signoz_traces.signoz_index_v3
@@ -51,10 +51,11 @@ ORDER BY spans DESC
 ```
 
 ```
-   ┌─serviceName──────────────┬─name──────────┬─spans─┐
-1. │ cheeky-cart-catalog-rest │ GET /health   │     8 │
-2. │ cheeky-cart-catalog-rest │ GET /products │     8 │
-   └──────────────────────────┴───────────────┴───────┘
+   ┌─serviceName──────────────┬─name────────────┬─spans─┐
+1. │ cheeky-cart-catalog-rest │ GET /health     │ 26563 │
+2. │ cheeky-cart-catalog-rest │ GET /products   │ 26563 │
+3. │ cheeky-cart-catalog-rest │ GET /products/1 │ 26555 │
+   └──────────────────────────┴─────────────────┴───────┘
 ```
 
 </details>
@@ -88,7 +89,9 @@ $env:PORT="8090"
 $env:OTEL_EXPORTER_OTLP_ENDPOINT="127.0.0.1:4317"
 $env:OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
 go run ./cmd/rest
-curl http://localhost:8090/products
+
+# In another terminal — generate enough spans for UI charts
+k6 run -e BASE_URL=http://localhost:8090 scripts/catalog-load.js
 ```
 
 Open http://localhost:8080 → **Services** → `cheeky-cart-catalog-rest`.
