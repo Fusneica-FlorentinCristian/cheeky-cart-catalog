@@ -1,6 +1,6 @@
 # SigNoz OTLP verification (L09 HW7)
 
-Captured **2026-07-24** after fixing the ingester **nop-pipeline** issue (root user org bootstrap in `compose.override.yaml`).
+Captured **2026-07-30** after fixing the ingester **nop-pipeline** issue (root user org bootstrap in `compose.override.yaml`).
 
 Screenshots taken at **1920×1080** (maximized browser viewport).
 
@@ -8,10 +8,12 @@ Screenshots taken at **1920×1080** (maximized browser viewport).
 
 | Item | Value |
 |------|-------|
-| Stack | SigNoz Foundry via WSL native Docker (`scripts/start-signoz-wsl.ps1`) |
+| Stack | SigNoz Foundry via WSL native Docker |
 | SigNoz UI | http://localhost:8080 |
-| Catalog REST | WSL `:8090`, `OTEL_EXPORTER_OTLP_ENDPOINT=127.0.0.1:4317`, `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` |
+| Catalog REST | Windows `:8090`, `OTEL_EXPORTER_OTLP_ENDPOINT=127.0.0.1:4317`, `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` |
 | Service name | `cheeky-cart-catalog-rest` |
+
+**Prerequisite:** copy `compose.override.yaml` into `docker/signoz-foundry/pours/deployment/` before `docker compose up -d`, then `docker restart signoz-ingester-1`.
 
 ## SigNoz UI — Services list
 
@@ -40,7 +42,7 @@ Same data visible in ClickHouse (`signoz_traces.signoz_index_v3`):
 
 ```sql
 SELECT count() AS total_traces FROM signoz_traces.signoz_index_v3
--- 20
+-- 16
 
 SELECT serviceName, name, count() AS spans
 FROM signoz_traces.signoz_index_v3
@@ -49,15 +51,11 @@ ORDER BY spans DESC
 ```
 
 ```
-   ┌─serviceName──────────────┬─name─────────────────┬─spans─┐
-1. │ cheeky-cart-catalog-rest │ GET /health          │     6 │
-2. │ cheeky-cart-catalog-rest │ GET /api/v1/products │     5 │
-3. │ cheeky-cart-catalog-rest │ GET /products        │     5 │
-4. │ cheeky-cart-catalog-rest │ GET /products/1      │     4 │
-   └──────────────────────────┴──────────────────────┴───────┘
+   ┌─serviceName──────────────┬─name──────────┬─spans─┐
+1. │ cheeky-cart-catalog-rest │ GET /health   │     8 │
+2. │ cheeky-cart-catalog-rest │ GET /products │     8 │
+   └──────────────────────────┴───────────────┴───────┘
 ```
-
-(`GET /api/v1/products` rows are from an initial smoke test with a wrong path; catalog routes are `/products` and `/products/{id}`.)
 
 </details>
 
@@ -80,8 +78,16 @@ pipelines:
 ## Reproduce
 
 ```powershell
-.\scripts\start-signoz-wsl.ps1
-wsl -d Ubuntu-22.04 sh scripts/run-rest-wsl.sh
+cd docker/signoz-foundry/pours/deployment
+docker compose up -d
+# ensure compose.override.yaml (SIGNOZ_USER_ROOT_*) is present
+docker restart signoz-ingester-1
+
+cd ../../..
+$env:PORT="8090"
+$env:OTEL_EXPORTER_OTLP_ENDPOINT="127.0.0.1:4317"
+$env:OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
+go run ./cmd/rest
 curl http://localhost:8090/products
 ```
 
